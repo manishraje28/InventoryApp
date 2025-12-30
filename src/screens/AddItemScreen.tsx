@@ -10,7 +10,7 @@ import { colors } from '../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddItem'>;
 type RouteProps = RouteProp<RootStackParamList, 'AddItem'>;
 
-const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Frock', 'Kurta', 'Dress', 'Other'];
+const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Frock', 'Kurta', 'Dress','Pant', 'Other'];
 const AGE_GROUPS: AgeGroup[] = ['0-1', '1-2', '2-3', '3-4', '4-5'];
 
 export const AddItemScreen = () => {
@@ -20,9 +20,19 @@ export const AddItemScreen = () => {
   const editingItem = route.params?.item;
 
   const [category, setCategory] = useState<string>(editingItem?.category || CATEGORIES[0]);
+  const [customCategory, setCustomCategory] = useState<string>('');
   const [color, setColor] = useState(editingItem?.color || '');
   const [ageGroup, setAgeGroup] = useState<string>(editingItem?.ageGroup || AGE_GROUPS[0]);
   const [quantity, setQuantity] = useState(editingItem?.quantity.toString() || '1');
+
+  useEffect(() => {
+    if (editingItem) {
+      if (!CATEGORIES.includes(editingItem.category as any)) {
+        setCategory('Other');
+        setCustomCategory(editingItem.category);
+      }
+    }
+  }, [editingItem]);
 
   const handleSave = async () => {
     if (!color.trim()) {
@@ -36,11 +46,17 @@ export const AddItemScreen = () => {
       return;
     }
 
+    const finalCategory = category === 'Other' ? customCategory.trim() : category;
+    if (!finalCategory) {
+      Alert.alert('Error', 'Please enter a category name');
+      return;
+    }
+
     try {
       if (editingItem) {
-        await updateItemDetails(editingItem.id, category, color, ageGroup, qty);
+        await updateItemDetails(editingItem.id, finalCategory, color, ageGroup, qty);
       } else {
-        await addNewItem(category, color, ageGroup, qty);
+        await addNewItem(finalCategory, color, ageGroup, qty);
       }
       navigation.goBack();
     } catch (error) {
@@ -76,6 +92,17 @@ export const AddItemScreen = () => {
           <View style={styles.optionsGrid}>
             {CATEGORIES.map(cat => renderOption(cat, category === cat, () => setCategory(cat)))}
           </View>
+          {category === 'Other' && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.label}>Enter category name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Pants, Jacket"
+                value={customCategory}
+                onChangeText={setCustomCategory}
+              />
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>

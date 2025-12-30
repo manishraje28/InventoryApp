@@ -8,7 +8,6 @@ import { useInventory } from '../context/InventoryContext';
 import { StockItemCard } from '../components/StockItemCard';
 import { colors } from '../theme/colors';
 import { Button } from 'react-native';
-import { exportInventoryToCSV } from '../../utils/exportToCsv';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 
@@ -63,7 +62,7 @@ export const DashboardScreen = () => {
 
                 <Button 
                     title="Export"
-                    onPress={exportInventoryToCSV}
+                    onPress={() => navigation.navigate('CsvPreview')}
                 />
             </View>
 
