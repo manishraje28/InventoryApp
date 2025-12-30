@@ -76,16 +76,16 @@ export const exportInventoryToCSV = async () => {
     }
 
     // Native fallback: try copying to clipboard if available
-    try {
-      const Clipboard = await import('expo-clipboard');
-      if (Clipboard && Clipboard.setStringAsync) {
-        await Clipboard.setStringAsync(csv);
-        Alert.alert('Export', `CSV copied to clipboard. File saved at: ${fileUri}`);
-        return;
-      }
-    } catch (e) {
-      console.warn('Clipboard copy failed or expo-clipboard not installed', e);
-    }
+    // try {
+    //   const Clipboard = await import('expo-clipboard');
+    //   if (Clipboard && Clipboard.setStringAsync) {
+    //     await Clipboard.setStringAsync(csv);
+    //     Alert.alert('Export', `CSV copied to clipboard. File saved at: ${fileUri}`);
+    //     return;
+    //   }
+    // } catch (e) {
+    //   console.warn('Clipboard copy failed or expo-clipboard not installed', e);
+    // }
 
     // Final fallback: notify user where the file is
     if (fileUri) {

@@ -11,7 +11,7 @@ import { Button } from 'react-native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 
-const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Frock', 'Kurta', 'Dress'];
+const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Pant', 'Kurta', 'Dress'];
 const AGE_GROUPS: AgeGroup[] = ['0-1', '1-2', '2-3', '3-4', '4-5'];
 
 export const DashboardScreen = () => {
@@ -62,7 +62,7 @@ export const DashboardScreen = () => {
 
                 <Button 
                     title="Export"
-                    onPress={() => navigation.navigate('CsvPreview')}
+                    onPress={() => (navigation as any).navigate('CsvPreview')}
                 />
             </View>
 

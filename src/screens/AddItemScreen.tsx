@@ -10,7 +10,7 @@ import { colors } from '../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddItem'>;
 type RouteProps = RouteProp<RootStackParamList, 'AddItem'>;
 
-const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Frock', 'Kurta', 'Dress','Pant', 'Other'];
+const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Pant', 'Kurta', 'Other'];
 const AGE_GROUPS: AgeGroup[] = ['0-1', '1-2', '2-3', '3-4', '4-5'];
 
 export const AddItemScreen = () => {
@@ -97,7 +97,7 @@ export const AddItemScreen = () => {
               <Text style={styles.label}>Enter category name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Pants, Jacket"
+                placeholder="e.g. Jackets, Sweaters"
                 value={customCategory}
                 onChangeText={setCustomCategory}
               />

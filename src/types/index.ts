@@ -1,4 +1,4 @@
-export type Category = 'T-Shirt' | 'Shirt' | 'Frock' | 'Kurta' | 'Dress' | 'Other';
+export type Category = 'T-Shirt' | 'Shirt' | 'Pant' | 'Kurta' | 'Dress' | 'Other';
 export type AgeGroup = '0-1' | '1-2' | '2-3' | '3-4' | '4-5';
 
 export interface StockItem {
@@ -14,4 +14,6 @@ export type RootStackParamList = {
   Dashboard: undefined;
   AddItem: { item?: StockItem }; // Optional item for editing
   ItemDetail: { item: StockItem };
+  CsvPreview: undefined;
+
 };
