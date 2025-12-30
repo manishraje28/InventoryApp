@@ -18,13 +18,21 @@
       "supportsTablet": true
     },
     "android": {
+        "package": "com.manishraje28.kidswearinventory",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.manishraje28.kidswearinventory"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "995ea5a5-3e88-41bd-a1ff-580370ee1e1f"
+      }
+    },
+    "owner": "manishraje28"
   }
 }
