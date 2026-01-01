@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Category, AgeGroup } from '../types';
 import { useInventory } from '../context/InventoryContext';
 import { colors } from '../theme/colors';
-
+//some minor comments
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddItem'>;
 type RouteProps = RouteProp<RootStackParamList, 'AddItem'>;
 
