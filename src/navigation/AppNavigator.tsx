@@ -6,6 +6,7 @@ import { DashboardScreen } from '../screens/DashboardScreen';
 import { AddItemScreen } from '../screens/AddItemScreen';
 import { ItemDetailScreen } from '../screens/ItemDetailScreen';
 import { CsvPreviewScreen } from '../screens/CsvPreviewScreen';
+import { SalesHistoryScreen } from '../screens/SalesHistoryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -20,13 +21,14 @@ export const AppNavigator = () => {
         }}
       >
         <Stack.Screen name="Dashboard" component={DashboardScreen} />
-        <Stack.Screen 
-          name="AddItem" 
-          component={AddItemScreen} 
+        <Stack.Screen
+          name="AddItem"
+          component={AddItemScreen}
           options={{ presentation: 'modal' }}
         />
         <Stack.Screen name="ItemDetail" component={ItemDetailScreen} />
-          <Stack.Screen name="CsvPreview" component={CsvPreviewScreen} />
+        <Stack.Screen name="SalesHistory" component={SalesHistoryScreen} />
+        <Stack.Screen name="CsvPreview" component={CsvPreviewScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

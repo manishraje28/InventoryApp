@@ -19,20 +19,37 @@ export const DashboardScreen = () => {
     const { items, isLoading } = useInventory();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
     const [selectedAge, setSelectedAge] = useState<string | null>(null);
+
+    // Derive unique subcategories based on current items (and optionally selected category)
+    const availableSubCategories = useMemo(() => {
+        const relevantItems = selectedCategory
+            ? items.filter(i => i.category === selectedCategory)
+            : items;
+        const subs = new Set<string>();
+        relevantItems.forEach(i => {
+            if (i.subCategory && i.subCategory.trim()) {
+                subs.add(i.subCategory.trim());
+            }
+        });
+        return Array.from(subs).sort();
+    }, [items, selectedCategory]);
 
     const filteredItems = useMemo(() => {
         return items.filter(item => {
             const matchesSearch =
                 item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (item.subCategory && item.subCategory.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 item.color.toLowerCase().includes(searchQuery.toLowerCase());
 
             const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
+            const matchesSubCategory = selectedSubCategory ? item.subCategory === selectedSubCategory : true;
             const matchesAge = selectedAge ? item.ageGroup === selectedAge : true;
 
-            return matchesSearch && matchesCategory && matchesAge;
+            return matchesSearch && matchesCategory && matchesSubCategory && matchesAge;
         });
-    }, [items, searchQuery, selectedCategory, selectedAge]);
+    }, [items, searchQuery, selectedCategory, selectedSubCategory, selectedAge]);
 
     const totalStock = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -53,23 +70,27 @@ export const DashboardScreen = () => {
                     <Text style={styles.title}>Mimi & Momo</Text>
                     <Text style={styles.subtitle}>{totalStock} items in stock</Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => navigation.navigate('AddItem', {})}
-                >
-                    <Text style={styles.addButtonText}>+ Add</Text>
-                </TouchableOpacity>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => navigation.navigate('AddItem', {})}
+                    >
+                        <Text style={styles.addButtonText}>+ Add</Text>
+                    </TouchableOpacity>
 
-                <Button 
-                    title="Export"
-                    onPress={() => (navigation as any).navigate('CsvPreview')}
-                />
+                    <TouchableOpacity
+                        style={[styles.addButton, { backgroundColor: colors.secondary, marginLeft: 8 }]}
+                        onPress={() => (navigation as any).navigate('CsvPreview')}
+                    >
+                        <Text style={styles.addButtonText}>Export</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.searchContainer}>
                 <TextInput
                     style={styles.searchInput}
-                    placeholder="Search color or category..."
+                    placeholder="Search category, subcategory, color..."
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                 />
@@ -77,11 +98,27 @@ export const DashboardScreen = () => {
 
             <View style={styles.filtersContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-                    {renderFilterChip('All', !selectedCategory, () => setSelectedCategory(null))}
+                    {renderFilterChip('All Categories', !selectedCategory, () => {
+                        setSelectedCategory(null);
+                        setSelectedSubCategory(null);
+                    })}
                     {CATEGORIES.map(cat => (
-                        renderFilterChip(cat, selectedCategory === cat, () => setSelectedCategory(cat === selectedCategory ? null : cat))
+                        renderFilterChip(cat, selectedCategory === cat, () => {
+                            setSelectedCategory(cat === selectedCategory ? null : cat);
+                            setSelectedSubCategory(null); // Reset subcat when category changes
+                        })
                     ))}
                 </ScrollView>
+
+                {availableSubCategories.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+                        {renderFilterChip('All Subs', !selectedSubCategory, () => setSelectedSubCategory(null))}
+                        {availableSubCategories.map(sub => (
+                            renderFilterChip(sub, selectedSubCategory === sub, () => setSelectedSubCategory(sub === selectedSubCategory ? null : sub))
+                        ))}
+                    </ScrollView>
+                )}
+
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
                     {renderFilterChip('All Ages', !selectedAge, () => setSelectedAge(null))}
                     {AGE_GROUPS.map(age => (
@@ -100,6 +137,10 @@ export const DashboardScreen = () => {
                     />
                 )}
                 contentContainerStyle={styles.listContent}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={true}
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No items found</Text>
@@ -135,14 +176,18 @@ const styles = StyleSheet.create({
     },
     addButton: {
         backgroundColor: colors.primary,
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
     },
     addButtonText: {
         color: '#fff',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 14,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     searchContainer: {
         padding: 16,

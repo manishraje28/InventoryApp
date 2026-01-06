@@ -6,9 +6,9 @@ interface InventoryContextType {
   items: StockItem[];
   isLoading: boolean;
   refreshItems: () => Promise<void>;
-  addNewItem: (category: string, color: string, ageGroup: string, quantity: number) => Promise<void>;
-  updateItemDetails: (id: number, category: string, color: string, ageGroup: string, quantity: number) => Promise<void>;
-  quickSell: (id: number, currentQuantity: number) => Promise<void>;
+  addNewItem: (category: string, subCategory: string, color: string, ageGroup: string, price: number, quantity: number) => Promise<void>;
+  updateItemDetails: (id: number, category: string, subCategory: string, color: string, ageGroup: string, price: number, quantity: number) => Promise<void>;
+  quickSell: (id: number, currentQuantity: number, currentPrice?: number) => Promise<void>;
   incrementStock: (id: number, currentQuantity: number) => Promise<void>;
   deleteStockItem: (id: number) => Promise<void>;
 }
@@ -38,31 +38,66 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     init();
   }, [refreshItems]);
 
-  const addNewItem = async (category: string, color: string, ageGroup: string, quantity: number) => {
-    await DB.addItem(category, color, ageGroup, quantity);
-    await refreshItems();
-  };
-
-  const updateItemDetails = async (id: number, category: string, color: string, ageGroup: string, quantity: number) => {
-    await DB.updateItem(id, category, color, ageGroup, quantity);
-    await refreshItems();
-  };
-
-  const quickSell = async (id: number, currentQuantity: number) => {
-    if (currentQuantity > 0) {
-      await DB.updateQuantity(id, currentQuantity - 1);
+  const addNewItem = async (category: string, subCategory: string, color: string, ageGroup: string, price: number, quantity: number) => {
+    try {
+      setIsLoading(true);
+      await DB.addItem(category, subCategory, color, ageGroup, price, quantity);
       await refreshItems();
+    } catch (error) {
+      console.error("Failed to add item", error);
+      alert("Failed to save item. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateItemDetails = async (id: number, category: string, subCategory: string, color: string, ageGroup: string, price: number, quantity: number) => {
+    try {
+      setIsLoading(true);
+      await DB.updateItem(id, category, subCategory, color, ageGroup, price, quantity);
+      await refreshItems();
+    } catch (error) {
+      console.error("Failed to update item", error);
+      alert("Failed to update item. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const quickSell = async (id: number, currentQuantity: number, currentPrice?: number) => {
+    if (currentQuantity > 0) {
+      try {
+        // Optimistic update could be done here, but sticking to safe DB flow
+        await DB.updateQuantity(id, currentQuantity - 1);
+        // Record sale if price is available
+        if (currentPrice !== undefined) {
+          await DB.addSale(id, 1, currentPrice);
+        }
+        await refreshItems();
+      } catch (error) {
+        console.error("Failed to quick sell", error);
+        alert("Failed to record sale.");
+      }
     }
   };
 
   const incrementStock = async (id: number, currentQuantity: number) => {
-    await DB.updateQuantity(id, currentQuantity + 1);
-    await refreshItems();
+    try {
+      await DB.updateQuantity(id, currentQuantity + 1);
+      await refreshItems();
+    } catch (error) {
+      console.error("Failed to increment stock", error);
+    }
   };
 
   const deleteStockItem = async (id: number) => {
-    await DB.deleteItem(id);
-    await refreshItems();
+    try {
+      await DB.deleteItem(id);
+      await refreshItems();
+    } catch (error) {
+      console.error("Failed to delete item", error);
+      alert("Failed to delete item.");
+    }
   };
 
   return (

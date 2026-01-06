@@ -57,26 +57,38 @@ export const CsvPreviewScreen: React.FC = () => {
                 </View>
             </View>
 
-            <ScrollView style={styles.content} contentContainerStyle={{ padding: 8 }} horizontal={false}>
-                <View style={styles.tableHeader}>
-                    <Text style={[styles.cell, styles.headerCell]}>Category</Text>
-                    <Text style={[styles.cell, styles.headerCell]}>Color</Text>
-                    <Text style={[styles.cell, styles.headerCell]}>Age</Text>
-                    <Text style={[styles.cell, styles.headerCell]}>Qty</Text>
-                </View>
-                {items.length === 0 && (
-                    <View style={{ padding: 16 }}>
-                        <Text style={{ color: colors.textLight }}>No items to preview</Text>
+            <ScrollView style={styles.content} contentContainerStyle={{ padding: 8 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                    <View>
+                        <View style={styles.tableHeader}>
+                            <Text style={[styles.cell, styles.headerCell, { width: 100 }]}>Category</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 100 }]}>Subcategory</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 80 }]}>Color</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 80 }]}>Age</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 80 }]}>Price</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 60 }]}>Stock</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 60 }]}>Sold</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 100 }]}>Revenue</Text>
+                        </View>
+                        {items.length === 0 && (
+                            <View style={{ padding: 16 }}>
+                                <Text style={{ color: colors.textLight }}>No items to preview</Text>
+                            </View>
+                        )}
+                        {items.map((it, idx) => (
+                            <View key={it.id ?? idx} style={styles.tableRow}>
+                                <Text style={[styles.cell, { width: 100 }]}>{it.category}</Text>
+                                <Text style={[styles.cell, { width: 100 }]}>{it.subCategory || '-'}</Text>
+                                <Text style={[styles.cell, { width: 80 }]}>{it.color}</Text>
+                                <Text style={[styles.cell, { width: 80 }]}>{it.ageGroup}</Text>
+                                <Text style={[styles.cell, { width: 80 }]}>{it.price ? `₹${it.price}` : '-'}</Text>
+                                <Text style={[styles.cell, { width: 60 }]}>{it.quantity}</Text>
+                                <Text style={[styles.cell, { width: 60 }]}>{it.soldQuantity || 0}</Text>
+                                <Text style={[styles.cell, { width: 100 }]}>₹{it.soldRevenue || 0}</Text>
+                            </View>
+                        ))}
                     </View>
-                )}
-                {items.map((it, idx) => (
-                    <View key={it.id ?? idx} style={styles.tableRow}>
-                        <Text style={styles.cell}>{it.category}</Text>
-                        <Text style={styles.cell}>{it.color}</Text>
-                        <Text style={styles.cell}>{it.ageGroup}</Text>
-                        <Text style={styles.cell}>{it.quantity}</Text>
-                    </View>
-                ))}
+                </ScrollView>
             </ScrollView>
         </SafeAreaView>
     );
@@ -89,9 +101,8 @@ const styles = StyleSheet.create({
     copyBtn: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
     copyText: { color: '#fff', fontWeight: 'bold' },
     content: { flex: 1 },
-    csvText: { fontFamily: 'monospace', color: colors.text },
     tableHeader: { flexDirection: 'row', backgroundColor: '#fff', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
     tableRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.background },
-    cell: { flex: 1, paddingHorizontal: 8, color: colors.text },
+    cell: { paddingHorizontal: 8, color: colors.text },
     headerCell: { fontWeight: '700', color: colors.textLight },
 });

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,11 +14,40 @@ export const ItemDetailScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { items, quickSell, incrementStock, deleteStockItem } = useInventory();
-  
+
+  // Local state for variable price selling
+  const [isSellingMode, setIsSellingMode] = useState(false);
+  const [salePrice, setSalePrice] = useState('');
+
   // Get latest item state from context
   const item = items.find(i => i.id === route.params.item.id);
 
   if (!item) return null;
+
+  const handleSalesHistory = () => {
+    (navigation as any).navigate('SalesHistory');
+  };
+
+  const startSelling = () => {
+    setSalePrice(item.price ? item.price.toString() : '');
+    setIsSellingMode(true);
+  };
+
+  const cancelSelling = () => {
+    setIsSellingMode(false);
+    setSalePrice('');
+  };
+
+  const confirmSale = async () => {
+    const finalPrice = parseFloat(salePrice);
+    if (isNaN(finalPrice) || finalPrice < 0) {
+      Alert.alert("Invalid Price", "Please enter a valid sale price.");
+      return;
+    }
+
+    await quickSell(item.id, item.quantity, finalPrice);
+    setIsSellingMode(false);
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -26,8 +55,8 @@ export const ItemDetailScreen = () => {
       'Are you sure you want to delete this item?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             await deleteStockItem(item.id);
@@ -49,56 +78,102 @@ export const ItemDetailScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Category</Text>
-            <Text style={styles.value}>{item.category}</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView style={styles.content}>
+          <View style={styles.card}>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Category</Text>
+              <Text style={styles.value}>{item.category}</Text>
+            </View>
+            {item.subCategory ? (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Subcategory</Text>
+                  <Text style={styles.value}>{item.subCategory}</Text>
+                </View>
+              </>
+            ) : null}
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Color</Text>
+              <Text style={styles.value}>{item.color}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Age Group</Text>
+              <Text style={styles.value}>{item.ageGroup}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Listed Price</Text>
+              <Text style={styles.value}>{item.price ? `₹${item.price}` : 'N/A'}</Text>
+            </View>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Color</Text>
-            <Text style={styles.value}>{item.color}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Age Group</Text>
-            <Text style={styles.value}>{item.ageGroup}</Text>
-          </View>
-        </View>
 
-        <View style={styles.stockControl}>
-          <Text style={styles.stockLabel}>Current Stock</Text>
-          <Text style={[
-            styles.stockCount,
-            item.quantity === 0 && styles.outOfStock,
-            item.quantity <= 3 && item.quantity > 0 && styles.lowStock
-          ]}>
-            {item.quantity}
-          </Text>
-          
-          <View style={styles.actions}>
-            <TouchableOpacity 
-              style={[styles.actionBtn, styles.sellBtn]} 
-              onPress={() => quickSell(item.id, item.quantity)}
-              disabled={item.quantity === 0}
-            >
-              <Text style={styles.actionBtnText}>SELL (-1)</Text>
-            </TouchableOpacity>
+          <View style={styles.stockControl}>
+            <Text style={styles.stockLabel}>Current Stock</Text>
+            <Text style={[
+              styles.stockCount,
+              item.quantity === 0 && styles.outOfStock,
+              item.quantity <= 3 && item.quantity > 0 && styles.lowStock
+            ]}>
+              {item.quantity}
+            </Text>
 
-            <TouchableOpacity 
-              style={[styles.actionBtn, styles.addBtn]} 
-              onPress={() => incrementStock(item.id, item.quantity)}
-            >
-              <Text style={[styles.actionBtnText, styles.addBtnText]}>+1</Text>
-            </TouchableOpacity>
+            {isSellingMode ? (
+              <View style={styles.sellModeContainer}>
+                <Text style={styles.sellModeTitle}>Selling 1 Item</Text>
+                <Text style={styles.sellModeSubtitle}>Enter Final Sale Price:</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={salePrice}
+                  onChangeText={setSalePrice}
+                  keyboardType="numeric"
+                  placeholder="Sale Price"
+                  autoFocus
+                />
+                <View style={styles.sellActions}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={cancelSelling}>
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.confirmBtn} onPress={confirmSale}>
+                    <Text style={styles.confirmBtnText}>Confirm Sale</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.sellBtn]}
+                  onPress={startSelling}
+                  disabled={item.quantity === 0}
+                >
+                  <Text style={styles.actionBtnText}>SELL (-1)</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.addBtn]}
+                  onPress={() => incrementStock(item.id, item.quantity)}
+                >
+                  <Text style={[styles.actionBtnText, styles.addBtnText]}>+1</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        </View>
 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteText}>Delete Item</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.historyButton} onPress={handleSalesHistory}>
+            <Text style={styles.historyButtonText}>View Sales History</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteText}>Delete Item</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -128,7 +203,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    flex: 1,
   },
   card: {
     backgroundColor: colors.card,
@@ -212,8 +286,79 @@ const styles = StyleSheet.create({
   addBtnText: {
     color: colors.text,
   },
+  sellModeContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  sellModeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  sellModeSubtitle: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginBottom: 12,
+  },
+  priceInput: {
+    width: '100%',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  sellActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: colors.textLight,
+    fontSize: 16,
+  },
+  confirmBtn: {
+    flex: 2,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  confirmBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  historyButton: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  historyButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   deleteButton: {
-    marginTop: 'auto',
+    marginTop: 12,
     padding: 16,
     alignItems: 'center',
   },

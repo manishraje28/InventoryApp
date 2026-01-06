@@ -26,16 +26,25 @@ export const StockItemCard: React.FC<Props> = ({ item, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
-        <Text style={styles.category}>{item.category}</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.category}>{item.category}</Text>
+          {item.subCategory ? <Text style={styles.subCategory}>{item.subCategory}</Text> : null}
+        </View>
         <View style={[styles.badge, { backgroundColor: statusColor }]}>
           <Text style={styles.badgeText}>{item.quantity}</Text>
         </View>
       </View>
-      
+
       <View style={styles.details}>
         <Text style={styles.detailText}>Color: <Text style={styles.bold}>{item.color}</Text></Text>
         <Text style={styles.detailText}>Age: <Text style={styles.bold}>{item.ageGroup}</Text></Text>
       </View>
+
+      {item.price ? (
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>₹{item.price}</Text>
+        </View>
+      ) : null}
 
       {isOutOfStock && (
         <View style={styles.alert}>
@@ -63,13 +72,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  titleContainer: {
+    flex: 1,
+    marginRight: 8,
   },
   category: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
+  },
+  subCategory: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginTop: 2,
   },
   badge: {
     paddingHorizontal: 12,
@@ -89,8 +107,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   detailText: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.textLight,
+  },
+  priceContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignSelf: 'flex-start',
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
   },
   bold: {
     color: colors.text,
