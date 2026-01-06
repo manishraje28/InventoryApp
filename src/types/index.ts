@@ -8,6 +8,8 @@ export interface StockItem {
   color: string;
   ageGroup: AgeGroup;
   price?: number;
+  costPrice?: number;
+  imageUri?: string;
   quantity: number;
   lastUpdated: string;
 }

@@ -9,6 +9,7 @@ export const initDB = async () => {
   const db = await SQLite.openDatabaseAsync(dbName);
 
   // Create tables if they don't exist
+  // Create tables if they don't exist
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS items (
@@ -18,6 +19,8 @@ export const initDB = async () => {
       color TEXT NOT NULL,
       ageGroup TEXT NOT NULL,
       price REAL,
+      costPrice REAL,
+      imageUri TEXT,
       quantity INTEGER NOT NULL,
       lastUpdated TEXT NOT NULL
     );
@@ -30,18 +33,34 @@ export const initDB = async () => {
       date TEXT NOT NULL,
       FOREIGN KEY(itemId) REFERENCES items(id)
     );
+    CREATE TABLE IF NOT EXISTS options (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        value TEXT NOT NULL,
+        parentId INTEGER
+    );
   `);
 
-  // Migration: Add new columns if they are missing from existing `items` table
-  // There is no direct "IF COLUMN NOT EXISTS" in SQLite for ALTER TABLE, so we can try-catch or check `pragma table_info`
-  // A simple robust way for this environment is to try adding the columns and ignore errors if they exist.
-  try {
-    await db.execAsync(`ALTER TABLE items ADD COLUMN subCategory TEXT;`);
-  } catch (e) { /* Column likely exists */ }
+  // Migration: Add new columns if they are missing
+  try { await db.execAsync(`ALTER TABLE items ADD COLUMN subCategory TEXT;`); } catch (e) { }
+  try { await db.execAsync(`ALTER TABLE items ADD COLUMN price REAL;`); } catch (e) { }
+  // V2 Migrations
+  try { await db.execAsync(`ALTER TABLE items ADD COLUMN costPrice REAL;`); } catch (e) { }
+  try { await db.execAsync(`ALTER TABLE items ADD COLUMN imageUri TEXT;`); } catch (e) { }
 
-  try {
-    await db.execAsync(`ALTER TABLE items ADD COLUMN price REAL;`);
-  } catch (e) { /* Column likely exists */ }
+  // Seed initial options if empty
+  const result = await db.getAllAsync('SELECT count(*) as count FROM options');
+  if (result.length > 0 && (result[0] as any).count === 0) {
+    const initialCategories = ['T-Shirt', 'Shirt', 'Pant', 'Kurta', 'Dress'];
+    const initialAges = ['0-1', '1-2', '2-3', '3-4', '4-5'];
+
+    for (const cat of initialCategories) {
+      await db.runAsync('INSERT INTO options (type, value) VALUES (?, ?)', 'CATEGORY', cat);
+    }
+    for (const age of initialAges) {
+      await db.runAsync('INSERT INTO options (type, value) VALUES (?, ?)', 'AGE', age);
+    }
+  }
 
   return db;
 };
@@ -51,6 +70,52 @@ export const getItems = async (): Promise<StockItem[]> => {
   const db = await SQLite.openDatabaseAsync(dbName);
   const allRows = await db.getAllAsync('SELECT * FROM items ORDER BY lastUpdated DESC');
   return allRows as StockItem[];
+};
+
+// Options Management
+export const getOptions = (type: string, parentValue?: string): Promise<string[]> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const db = await SQLite.openDatabaseAsync(dbName);
+      let query = 'SELECT value FROM options WHERE type = ?';
+      let params = [type];
+
+      if (parentValue) {
+        const parentRes = await db.getFirstAsync('SELECT id FROM options WHERE value = ?', [parentValue]);
+        if (parentRes) {
+          query += ' AND parentId = ?';
+          params.push((parentRes as any).id);
+        } else {
+          resolve([]);
+          return;
+        }
+      }
+      query += ' ORDER BY value ASC';
+
+      const rows = await db.getAllAsync(query, params);
+      resolve(rows.map((r: any) => r.value));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export const addOption = (type: string, value: string, parentValue?: string): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const db = await SQLite.openDatabaseAsync(dbName);
+      let parentId = null;
+      if (parentValue) {
+        const parentRes = await db.getFirstAsync('SELECT id FROM options WHERE value = ?', [parentValue]);
+        if (parentRes) parentId = (parentRes as any).id;
+      }
+
+      await db.runAsync('INSERT INTO options (type, value, parentId) VALUES (?, ?, ?)', type, value, parentId);
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
 
 export const getAllItems = (): Promise<any[]> => {
@@ -84,19 +149,23 @@ export const addItem = async (
   color: string,
   ageGroup: string,
   price: number,
-  quantity: number
+  quantity: number,
+  costPrice?: number,
+  imageUri?: string
 ): Promise<number> => {
   const db = await SQLite.openDatabaseAsync(dbName);
   const lastUpdated = new Date().toISOString();
   const result = await db.runAsync(
-    'INSERT INTO items (category, subCategory, color, ageGroup, price, quantity, lastUpdated) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO items (category, subCategory, color, ageGroup, price, quantity, lastUpdated, costPrice, imageUri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     category,
     subCategory,
     color,
     ageGroup,
     price,
     quantity,
-    lastUpdated
+    lastUpdated,
+    costPrice || 0,
+    imageUri || null
   );
   return result.lastInsertRowId;
 };
@@ -109,12 +178,14 @@ export const updateItem = async (
   color: string,
   ageGroup: string,
   price: number,
-  quantity: number
+  quantity: number,
+  costPrice?: number,
+  imageUri?: string
 ): Promise<void> => {
   const db = await SQLite.openDatabaseAsync(dbName);
   const lastUpdated = new Date().toISOString();
   await db.runAsync(
-    'UPDATE items SET category = ?, subCategory = ?, color = ?, ageGroup = ?, price = ?, quantity = ?, lastUpdated = ? WHERE id = ?',
+    'UPDATE items SET category = ?, subCategory = ?, color = ?, ageGroup = ?, price = ?, quantity = ?, lastUpdated = ?, costPrice = ?, imageUri = ? WHERE id = ?',
     category,
     subCategory,
     color,
@@ -122,6 +193,8 @@ export const updateItem = async (
     price,
     quantity,
     lastUpdated,
+    costPrice || 0,
+    imageUri || null,
     id
   );
 };

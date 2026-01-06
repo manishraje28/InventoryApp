@@ -6,21 +6,28 @@ import { Platform, Alert } from 'react-native';
 
 // Converts array of StockItem to CSV string
 function convertToCsv(items: any[]): string {
-  const header = 'Category,Subcategory,Color,Age Group,Price,Current Stock,Sold Quantity,Total Revenue,Last Updated';
-  const rows = items.map(item =>
-    [
+  const header = 'Category,Subcategory,Color,Age Group,Price,Current Stock,Cost Price,Sold Quantity,Total Revenue,Estimated Profit,Last Updated';
+  const rows = items.map(item => {
+    const soldQty = item.soldQuantity || 0;
+    const revenue = item.soldRevenue || 0;
+    const costPrice = item.costPrice || 0;
+    const profit = revenue - (soldQty * costPrice);
+
+    return [
       item.category,
       item.subCategory || '',
       item.color,
       item.ageGroup,
       item.price || '',
       item.quantity, // Current stock
-      item.soldQuantity || 0, // Calculated from sales table
-      item.soldRevenue || 0,
+      costPrice,     // NEW: Cost Price
+      soldQty,
+      revenue,
+      profit,        // NEW: Profit
       item.lastUpdated
     ]
       .map((field: string | number) => `"${String(field).replace(/"/g, '""')}"`).join(',')
-  );
+  });
   return [header, ...rows].join('\n');
 }
 

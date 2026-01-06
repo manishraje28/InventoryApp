@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { StockItem } from '../types';
 import { colors } from '../theme/colors';
 
@@ -26,6 +26,9 @@ export const StockItemCard: React.FC<Props> = ({ item, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
+        {item.imageUri && (
+          <Image source={{ uri: item.imageUri }} style={styles.thumbnail} />
+        )}
         <View style={styles.titleContainer}>
           <Text style={styles.category}>{item.category}</Text>
           {item.subCategory ? <Text style={styles.subCategory}>{item.subCategory}</Text> : null}
@@ -137,5 +140,11 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  thumbnail: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 12,
   },
 });

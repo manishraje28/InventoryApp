@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Category, AgeGroup } from '../types';
 import { useInventory } from '../context/InventoryContext';
 import { StockItemCard } from '../components/StockItemCard';
+import { Dropdown } from '../components/Dropdown';
 import { colors } from '../theme/colors';
 import { Button } from 'react-native';
 
@@ -13,18 +14,32 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Dashboard'>
 
 const CATEGORIES: Category[] = ['T-Shirt', 'Shirt', 'Pant', 'Kurta', 'Dress'];
 const AGE_GROUPS: AgeGroup[] = ['0-1', '1-2', '2-3', '3-4', '4-5'];
-
 export const DashboardScreen = () => {
     const navigation = useNavigation<NavigationProp>();
-    const { items, isLoading } = useInventory();
+    const { items, isLoading, fetchOptions } = useInventory();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
     const [selectedAge, setSelectedAge] = useState<string | null>(null);
 
-    // Derive unique subcategories based on current items (and optionally selected category)
+    const [categories, setCategories] = useState<string[]>([]);
+    const [ageGroups, setAgeGroups] = useState<string[]>([]);
+
+    // Load options on mount
+    React.useEffect(() => {
+        const load = async () => {
+            const cats = await fetchOptions('CATEGORY');
+            const ages = await fetchOptions('AGE');
+            setCategories(['All', ...cats]);
+            setAgeGroups(['All', ...ages]);
+        };
+        load();
+    }, []);
+
+
+
     const availableSubCategories = useMemo(() => {
-        const relevantItems = selectedCategory
+        const relevantItems = selectedCategory && selectedCategory !== 'All'
             ? items.filter(i => i.category === selectedCategory)
             : items;
         const subs = new Set<string>();
@@ -43,25 +58,15 @@ export const DashboardScreen = () => {
                 (item.subCategory && item.subCategory.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 item.color.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
-            const matchesSubCategory = selectedSubCategory ? item.subCategory === selectedSubCategory : true;
-            const matchesAge = selectedAge ? item.ageGroup === selectedAge : true;
+            const matchesCategory = selectedCategory && selectedCategory !== 'All' ? item.category === selectedCategory : true;
+            const matchesSubCategory = selectedSubCategory && selectedSubCategory !== 'All' ? item.subCategory === selectedSubCategory : true;
+            const matchesAge = selectedAge && selectedAge !== 'All' ? item.ageGroup === selectedAge : true;
 
             return matchesSearch && matchesCategory && matchesSubCategory && matchesAge;
         });
     }, [items, searchQuery, selectedCategory, selectedSubCategory, selectedAge]);
 
     const totalStock = items.reduce((sum, item) => sum + item.quantity, 0);
-
-    const renderFilterChip = (label: string, selected: boolean, onPress: () => void) => (
-        <TouchableOpacity
-            key={label}
-            style={[styles.chip, selected && styles.chipSelected]}
-            onPress={onPress}
-        >
-            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-        </TouchableOpacity>
-    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -97,34 +102,38 @@ export const DashboardScreen = () => {
             </View>
 
             <View style={styles.filtersContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-                    {renderFilterChip('All Categories', !selectedCategory, () => {
-                        setSelectedCategory(null);
-                        setSelectedSubCategory(null);
-                    })}
-                    {CATEGORIES.map(cat => (
-                        renderFilterChip(cat, selectedCategory === cat, () => {
-                            setSelectedCategory(cat === selectedCategory ? null : cat);
-                            setSelectedSubCategory(null); // Reset subcat when category changes
-                        })
-                    ))}
-                </ScrollView>
+                <View style={styles.filterRow}>
+                    <View style={styles.filterFlex}>
+                        <Dropdown
+                            label="Category"
+                            data={categories}
+                            selectedValue={selectedCategory || 'All'}
+                            onSelect={(val) => {
+                                setSelectedCategory(val === 'All' ? null : val);
+                                setSelectedSubCategory(null);
+                            }}
+                        />
+                    </View>
+                    <View style={styles.filterFlex}>
+                        <Dropdown
+                            label="Age"
+                            data={ageGroups}
+                            selectedValue={selectedAge || 'All'}
+                            onSelect={(val) => setSelectedAge(val === 'All' ? null : val)}
+                        />
+                    </View>
+                </View>
 
                 {availableSubCategories.length > 0 && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-                        {renderFilterChip('All Subs', !selectedSubCategory, () => setSelectedSubCategory(null))}
-                        {availableSubCategories.map(sub => (
-                            renderFilterChip(sub, selectedSubCategory === sub, () => setSelectedSubCategory(sub === selectedSubCategory ? null : sub))
-                        ))}
-                    </ScrollView>
+                    <View style={{ paddingHorizontal: 16 }}>
+                        <Dropdown
+                            label="Subcategory"
+                            data={['All', ...availableSubCategories]}
+                            selectedValue={selectedSubCategory || 'All'}
+                            onSelect={(val) => setSelectedSubCategory(val === 'All' ? null : val)}
+                        />
+                    </View>
                 )}
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-                    {renderFilterChip('All Ages', !selectedAge, () => setSelectedAge(null))}
-                    {AGE_GROUPS.map(age => (
-                        renderFilterChip(age, selectedAge === age, () => setSelectedAge(age === selectedAge ? null : age))
-                    ))}
-                </ScrollView>
             </View>
 
             <FlatList
@@ -205,29 +214,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.card,
         paddingBottom: 8,
     },
-    filtersScroll: {
+    filterRow: {
+        flexDirection: 'row',
         paddingHorizontal: 16,
-        marginBottom: 8,
+        gap: 12,
     },
-    chip: {
-        paddingHorizontal: 16,
-        paddingVertical: 6,
-        borderRadius: 20,
-        backgroundColor: colors.background,
-        marginRight: 8,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    chipSelected: {
-        backgroundColor: colors.text,
-        borderColor: colors.text,
-    },
-    chipText: {
-        color: colors.text,
-        fontSize: 14,
-    },
-    chipTextSelected: {
-        color: '#fff',
+    filterFlex: {
+        flex: 1,
     },
     listContent: {
         padding: 16,
