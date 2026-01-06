@@ -67,26 +67,37 @@ export const CsvPreviewScreen: React.FC = () => {
                             <Text style={[styles.cell, styles.headerCell, { width: 80 }]}>Age</Text>
                             <Text style={[styles.cell, styles.headerCell, { width: 80 }]}>Price</Text>
                             <Text style={[styles.cell, styles.headerCell, { width: 60 }]}>Stock</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 80 }]}>Cost</Text>
                             <Text style={[styles.cell, styles.headerCell, { width: 60 }]}>Sold</Text>
                             <Text style={[styles.cell, styles.headerCell, { width: 100 }]}>Revenue</Text>
+                            <Text style={[styles.cell, styles.headerCell, { width: 100 }]}>Profit</Text>
                         </View>
                         {items.length === 0 && (
                             <View style={{ padding: 16 }}>
                                 <Text style={{ color: colors.textLight }}>No items to preview</Text>
                             </View>
                         )}
-                        {items.map((it, idx) => (
-                            <View key={it.id ?? idx} style={styles.tableRow}>
-                                <Text style={[styles.cell, { width: 100 }]}>{it.category}</Text>
-                                <Text style={[styles.cell, { width: 100 }]}>{it.subCategory || '-'}</Text>
-                                <Text style={[styles.cell, { width: 80 }]}>{it.color}</Text>
-                                <Text style={[styles.cell, { width: 80 }]}>{it.ageGroup}</Text>
-                                <Text style={[styles.cell, { width: 80 }]}>{it.price ? `₹${it.price}` : '-'}</Text>
-                                <Text style={[styles.cell, { width: 60 }]}>{it.quantity}</Text>
-                                <Text style={[styles.cell, { width: 60 }]}>{it.soldQuantity || 0}</Text>
-                                <Text style={[styles.cell, { width: 100 }]}>₹{it.soldRevenue || 0}</Text>
-                            </View>
-                        ))}
+                        {items.map((it, idx) => {
+                            const soldQty = it.soldQuantity || 0;
+                            const revenue = it.soldRevenue || 0;
+                            const costPrice = it.costPrice || 0;
+                            const profit = revenue - (soldQty * costPrice);
+
+                            return (
+                                <View key={it.id ?? idx} style={styles.tableRow}>
+                                    <Text style={[styles.cell, { width: 100 }]}>{it.category}</Text>
+                                    <Text style={[styles.cell, { width: 100 }]}>{it.subCategory || '-'}</Text>
+                                    <Text style={[styles.cell, { width: 80 }]}>{it.color}</Text>
+                                    <Text style={[styles.cell, { width: 80 }]}>{it.ageGroup}</Text>
+                                    <Text style={[styles.cell, { width: 80 }]}>{it.price ? `₹${it.price}` : '-'}</Text>
+                                    <Text style={[styles.cell, { width: 60 }]}>{it.quantity}</Text>
+                                    <Text style={[styles.cell, { width: 80 }]}>{costPrice ? `₹${costPrice}` : '-'}</Text>
+                                    <Text style={[styles.cell, { width: 60 }]}>{soldQty}</Text>
+                                    <Text style={[styles.cell, { width: 100 }]}>₹{revenue}</Text>
+                                    <Text style={[styles.cell, { width: 100, fontWeight: 'bold', color: profit >= 0 ? colors.primary : colors.danger }]}>₹{profit}</Text>
+                                </View>
+                            );
+                        })}
                     </View>
                 </ScrollView>
             </ScrollView>

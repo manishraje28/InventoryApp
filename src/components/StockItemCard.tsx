@@ -142,9 +142,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   thumbnail: {
-    width: 50,
-    height: 50,
+    width: 110,
+    height: 110,
     borderRadius: 8,
-    marginRight: 12,
+    marginRight: 16,
+    backgroundColor: colors.background,
+    resizeMode: 'cover',
   },
 });
